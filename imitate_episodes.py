@@ -35,7 +35,7 @@ def main(args):
     num_epochs = args['num_epochs']
 
     # get task parameters
-    is_sim = task_name[:4] == 'sim_'
+    is_sim = task_name[:4] == 'sim_' 
     if is_sim:
         from constants import SIM_TASK_CONFIGS
         task_config = SIM_TASK_CONFIGS[task_name]
@@ -45,11 +45,11 @@ def main(args):
     dataset_dir = task_config['dataset_dir']
     num_episodes = task_config['num_episodes']
     episode_len = task_config['episode_len']
-    camera_names = task_config['camera_names']
 
     # fixed parameters
     state_dim = 14
     lr_backbone = 1e-5
+    device="cuda:0"
     # backbone = 'resnet18'
     if policy_class == 'ACT':
         enc_layers = 4
@@ -65,7 +65,6 @@ def main(args):
                          'enc_layers': enc_layers,
                          'dec_layers': dec_layers,
                          'nheads': nheads,
-                         'camera_names': camera_names,
                          }
     else:
         raise NotImplementedError
@@ -82,7 +81,6 @@ def main(args):
         'task_name': task_name,
         'seed': args['seed'],
         'temporal_agg': args['temporal_agg'],
-        'camera_names': camera_names,
         'real_robot': not is_sim
     }
     
@@ -105,14 +103,18 @@ def main(args):
         print()
         exit()
 
-    train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_size_val)
+    train_dataloader, val_dataloader, _ = load_data(dataset_dir,
+                                                           num_episodes,
+                                                           batch_size_train,
+                                                           batch_size_val,
+                                                           device)
 
     # save dataset stats
-    if not os.path.isdir(ckpt_dir):
-        os.makedirs(ckpt_dir)
-    stats_path = os.path.join(ckpt_dir, f'dataset_stats.pkl')
-    with open(stats_path, 'wb') as f:
-        pickle.dump(stats, f)
+    # if not os.path.isdir(ckpt_dir):
+    #     os.makedirs(ckpt_dir)
+    # stats_path = os.path.join(ckpt_dir, f'dataset_stats.pkl')
+    # with open(stats_path, 'wb') as f:
+    #     pickle.dump(stats, f)
 
     best_ckpt_info = train_bc(train_dataloader, val_dataloader, config)
     best_epoch, min_val_loss, best_state_dict = best_ckpt_info
@@ -439,4 +441,4 @@ if __name__ == '__main__':
     
     main(vars(parser.parse_args()))
 
-# python3 imitate_episodes.py --task_name sim_transfer_cube_scripted --ckpt_dir /home/hae1/workspace/act-vector/save_ckpt --policy_class ACT --kl_weight 10 --chunk_size 100 --hidden_dim 512 --batch_size 8 --dim_feedforward 3200 --num_epochs 2000  --lr 1e-5 --seed 0
+# python3 imitate_episodes.py --task_name full_plan_same_subgoal_augment --ckpt_dir /home/hae1/workspace/act-vector/save_ckpt --policy_class ACT --kl_weight 10 --chunk_size 100 --hidden_dim 512 --batch_size 8 --dim_feedforward 3200 --num_epochs 2000  --lr 1e-5 --seed 0

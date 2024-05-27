@@ -1,6 +1,8 @@
 import pathlib
 
 ### Task parameters
+# DATA_DIR = 'put dataset path here'
+
 DATA_DIR = '/home/hae1/workspace/act-vector/dataset'
 SIM_TASK_CONFIGS = {
     'sim_transfer_cube_scripted':{
@@ -30,6 +32,12 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['top']
     },
+    
+    'sim_full_plan_same_subgoal_augment':{
+        'dataset_dir': DATA_DIR + '/full_plan_same_subgoal_augment',
+        'num_episodes': 5838,
+        'episode_len': 642,
+    }
 }
 
 ### Simulation envs fixed constants
