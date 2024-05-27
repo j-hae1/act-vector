@@ -5,7 +5,6 @@ DETR model and criterion classes.
 import torch
 from torch import nn
 from torch.autograd import Variable
-from .backbone import build_backbone
 from .transformer import build_transformer, TransformerEncoder, TransformerEncoderLayer
 
 import numpy as np
@@ -52,16 +51,12 @@ class DETRVAE(nn.Module):
         self.action_head = nn.Linear(hidden_dim, state_dim)
         self.is_pad_head = nn.Linear(hidden_dim, 1)
         self.query_embed = nn.Embedding(num_queries, hidden_dim)
-        if backbones is not None:
-            self.input_proj = nn.Conv2d(backbones[0].num_channels, hidden_dim, kernel_size=1)
-            self.backbones = nn.ModuleList(backbones)
-            self.input_proj_robot_state = nn.Linear(14, hidden_dim)
-        else:
-            # input_dim = 14 + 7 # robot_state + env_state
-            self.input_proj_robot_state = nn.Linear(14, hidden_dim)
-            self.input_proj_env_state = nn.Linear(7, hidden_dim)
-            self.pos = torch.nn.Embedding(2, hidden_dim)
-            self.backbones = None
+
+        # input_dim = 14 + 7 # robot_state + env_state
+        self.input_proj_robot_state = nn.Linear(14, hidden_dim)
+        self.input_proj_env_state = nn.Linear(7, hidden_dim)
+        self.pos = torch.nn.Embedding(2, hidden_dim)
+        self.backbones = None
 
         # encoder extra parameters
         self.latent_dim = 32 # final size of latent z # TODO tune
@@ -112,28 +107,11 @@ class DETRVAE(nn.Module):
             mu = logvar = None
             latent_sample = torch.zeros([bs, self.latent_dim], dtype=torch.float32).to(qpos.device)
             latent_input = self.latent_out_proj(latent_sample)
-
-        if self.backbones is not None:
-            # Image observation features and position embeddings
-            all_cam_features = []
-            all_cam_pos = []
-            for cam_id, cam_name in enumerate(self.camera_names):
-                features, pos = self.backbones[0](image[:, cam_id]) # HARDCODED
-                features = features[0] # take the last layer feature
-                pos = pos[0]
-                all_cam_features.append(self.input_proj(features))
-                all_cam_pos.append(pos)
-            # proprioception features
-            proprio_input = self.input_proj_robot_state(qpos)
-            # fold camera dimension into width dimension
-            src = torch.cat(all_cam_features, axis=3)
-            pos = torch.cat(all_cam_pos, axis=3)
-            hs = self.transformer(src, None, self.query_embed.weight, pos, latent_input, proprio_input, self.additional_pos_embed.weight)[0]
-        else:
-            qpos = self.input_proj_robot_state(qpos)
-            env_state = self.input_proj_env_state(env_state)
-            transformer_input = torch.cat([qpos, env_state], axis=1) # seq length = 2
-            hs = self.transformer(transformer_input, None, self.query_embed.weight, self.pos.weight)[0]
+            
+        qpos = self.input_proj_robot_state(qpos)
+        env_state = self.input_proj_env_state(env_state)
+        transformer_input = torch.cat([qpos, env_state], axis=1) # seq length = 2
+        hs = self.transformer(transformer_input, None, self.query_embed.weight, self.pos.weight)[0]
         a_hat = self.action_head(hs)
         is_pad_hat = self.is_pad_head(hs)
         return a_hat, is_pad_hat, [mu, logvar]
@@ -159,11 +137,11 @@ def build(args):
     state_dim = 14 # TODO hardcode
 
     # From state
-    # backbone = None # from state for now, no need for conv nets
+    backbones = None # from state for now, no need for conv nets
     # From image
-    backbones = []
-    backbone = build_backbone(args)
-    backbones.append(backbone)
+    # backbones = []
+    # backbone = build_backbone(args)
+    # backbones.append(backbone)
 
     transformer = build_transformer(args)
 

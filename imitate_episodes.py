@@ -49,7 +49,7 @@ def main(args):
     # fixed parameters
     state_dim = 14
     lr_backbone = 1e-5
-    backbone = 'resnet18'
+    # backbone = 'resnet18'
     if policy_class == 'ACT':
         enc_layers = 4
         dec_layers = 7
@@ -60,7 +60,7 @@ def main(args):
                          'hidden_dim': args['hidden_dim'],
                          'dim_feedforward': args['dim_feedforward'],
                          'lr_backbone': lr_backbone,
-                         'backbone': backbone,
+                         # 'backbone': backbone,
                          'enc_layers': enc_layers,
                          'dec_layers': dec_layers,
                          'nheads': nheads,
