@@ -16,7 +16,7 @@ from utils import compute_dict_mean, set_seed, detach_dict # helper functions
 from policy import ACTPolicy
 from visualize_episodes import save_videos
 
-from sim_env import BOX_POSE
+# from sim_env import BOX_POSE
 
 import IPython
 e = IPython.embed
@@ -424,3 +424,10 @@ if __name__ == '__main__':
     parser.add_argument('--temporal_agg', action='store_true')
     
     main(vars(parser.parse_args()))
+
+# python3 imitate_episodes.py \
+# --task_name sim_transfer_cube_scripted \
+# --ckpt_dir /home/hae1/workspace/act-vector/save_ckpt \
+# --policy_class ACT --kl_weight 10 --chunk_size 100 --hidden_dim 512 --batch_size 8 --dim_feedforward 3200 \
+# --num_epochs 2000  --lr 1e-5 \
+# --seed 0
