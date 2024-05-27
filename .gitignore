@@ -140,3 +140,4 @@ dmypy.json
 .pyre/
 
 dataset/
+save_ckpt/

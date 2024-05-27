@@ -382,7 +382,7 @@ def train_bc(train_dataloader, val_dataloader, config):
     print(f'Training finished:\nSeed {seed}, val loss {min_val_loss:.6f} at epoch {best_epoch}')
 
     # save training curves
-    plot_history(train_history, validation_history, num_epochs, ckpt_dir, seed)
+    # plot_history(train_history, validation_history, num_epochs, ckpt_dir, seed)
 
     return best_ckpt_info
 
