@@ -386,7 +386,7 @@ def train_bc(train_dataloader, val_dataloader, config):
         # Log the summaries
         wandb.log({"train": train_log, "validation": val_log})
 
-        if epoch % 100 == 0 and epoch > 0:
+        if epoch % 1000 == 0 and epoch > 0:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
             torch.save(policy.state_dict(), ckpt_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)
@@ -443,4 +443,4 @@ if __name__ == '__main__':
     
     main(vars(parser.parse_args()))
 
-# python3 imitate_episodes.py --task_name full_plan_same_subgoal_augment --ckpt_dir /home/hae1/workspace/act-vector/save_ckpt --policy_class ACT --kl_weight 10 --chunk_size 100 --hidden_dim 512 --batch_size 8 --dim_feedforward 3200 --num_epochs 2000  --lr 1e-5 --seed 0
+# python3 imitate_episodes.py --task_name sim_full_plan_same_subgoal_augment --ckpt_dir /home/hae1/workspace/act-vector/save_ckpt --policy_class ACT --kl_weight 10 --chunk_size 16 --hidden_dim 512 --batch_size 64 --dim_feedforward 3200 --num_epochs 2000000  --lr 5e-5 --seed 0

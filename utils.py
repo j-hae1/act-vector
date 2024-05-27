@@ -64,9 +64,10 @@ class EpisodicDataset_card(torch.utils.data.Dataset):
         self.robot_state_high = torch.tensor(self.robot_state_high, dtype=torch.float32, device=self.device)
         
         num_data_to_use= 100
-        data_path_list = glob(os.path.join(self.dataset_dir, "augment_*.pt"))[:num_data_to_use]
+        data_path_list = glob(os.path.join(self.dataset_dir, "augment_*.pt"))  # [:num_data_to_use]
+        selected_data_paths = [data_path_list[i] for i in self.episode_ids]
 
-        self.load_data(data_path_list)
+        self.load_data(selected_data_paths)
         self.__getitem__(0) # initialize self.is_sim
                 
     def load_data(self, data_path_list):
@@ -158,6 +159,7 @@ class EpisodicDataset_card(torch.utils.data.Dataset):
         action_pad = self.action_pad[index]
         non_zero_rows = torch.any(action_pad != 0, dim=1)
         episode_len = torch.sum(non_zero_rows).item()
+
         action_full = self.action_buf[index]
         original_action_shape = action_full.shape
         robot_state = self.robot_state_buf[index]
