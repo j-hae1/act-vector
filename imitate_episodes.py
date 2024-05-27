@@ -13,7 +13,7 @@ from constants import PUPPET_GRIPPER_JOINT_OPEN
 from utils import load_data # data functions
 from utils import sample_box_pose, sample_insertion_pose # robot functions
 from utils import compute_dict_mean, set_seed, detach_dict # helper functions
-from policy import ACTPolicy, CNNMLPPolicy
+from policy import ACTPolicy
 from visualize_episodes import save_videos
 
 from sim_env import BOX_POSE
@@ -66,9 +66,6 @@ def main(args):
                          'nheads': nheads,
                          'camera_names': camera_names,
                          }
-    elif policy_class == 'CNNMLP':
-        policy_config = {'lr': args['lr'], 'lr_backbone': lr_backbone, 'backbone' : backbone, 'num_queries': 1,
-                         'camera_names': camera_names,}
     else:
         raise NotImplementedError
 
@@ -121,8 +118,6 @@ def main(args):
 def make_policy(policy_class, policy_config):
     if policy_class == 'ACT':
         policy = ACTPolicy(policy_config)
-    elif policy_class == 'CNNMLP':
-        policy = CNNMLPPolicy(policy_config)
     else:
         raise NotImplementedError
     return policy
@@ -130,8 +125,6 @@ def make_policy(policy_class, policy_config):
 
 def make_optimizer(policy_class, policy):
     if policy_class == 'ACT':
-        optimizer = policy.configure_optimizers()
-    elif policy_class == 'CNNMLP':
         optimizer = policy.configure_optimizers()
     else:
         raise NotImplementedError
@@ -259,8 +252,6 @@ def eval_bc(config, ckpt_name, save_episode=True):
                         raw_action = (actions_for_curr_step * exp_weights).sum(dim=0, keepdim=True)
                     else:
                         raw_action = all_actions[:, t % query_frequency]
-                elif config['policy_class'] == "CNNMLP":
-                    raw_action = policy(qpos, curr_image)
                 else:
                     raise NotImplementedError
 
