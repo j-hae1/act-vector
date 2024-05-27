@@ -17,8 +17,8 @@ class ACTPolicy(nn.Module):
         print(f'KL Weight {self.kl_weight}')
 
     def __call__(self, qpos, env_state, actions=None, is_pad=None):
-        env_state = env_state
-        env_state = torch.randn(qpos.size(0), 7).to(qpos.device)    
+        # env_state = env_state
+        # env_state = torch.randn(qpos.size(0), 7).to(qpos.device)    
 
         if actions is not None: # training time
             actions = actions[:, :self.model.num_queries]

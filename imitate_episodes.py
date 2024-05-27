@@ -24,6 +24,8 @@ e = IPython.embed
 
 def main(args):
     set_seed(1)
+    torch.multiprocessing.set_start_method('spawn')
+
     # command line parameters
     is_eval = args['eval']
     ckpt_dir = args['ckpt_dir']

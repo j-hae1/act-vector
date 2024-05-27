@@ -15,7 +15,7 @@ from torch_jit_utils import  unscale_transform, scale_transform
 
 def pad_and_stack_with_mask(tensor_list):
     # Find the maximum length among the tensors
-    max_length = max(tensor.size(0) for tensor in tensor_list)
+    max_length = max(tensor.size(0) for tensor in tensor_list) + 1
     
     # Determine the shape for the padded tensors
     batch_size = len(tensor_list)
@@ -63,7 +63,7 @@ class EpisodicDataset_card(torch.utils.data.Dataset):
         self.robot_state_low = torch.tensor(self.robot_state_low, dtype=torch.float32, device=self.device)
         self.robot_state_high = torch.tensor(self.robot_state_high, dtype=torch.float32, device=self.device)
         
-        num_data_to_use= 10
+        num_data_to_use= 100
         data_path_list = glob(os.path.join(self.dataset_dir, "augment_*.pt"))[:num_data_to_use]
 
         self.load_data(data_path_list)
@@ -130,6 +130,13 @@ class EpisodicDataset_card(torch.utils.data.Dataset):
         self.env_state_buf, self.env_state_pad = pad_and_stack_with_mask(env_state_buf)
         self.action_buf, self.action_pad = pad_and_stack_with_mask(action_buf)
 
+        self.robot_state_buf = self.robot_state_buf.cpu()
+        self.env_state_buf = self.env_state_buf.cpu()
+        self.action_buf = self.action_buf.cpu()
+        self.robot_state_pad = self.robot_state_pad.cpu()
+        self.env_state_pad = self.env_state_pad.cpu()
+        self.action_pad = self.action_pad.cpu()
+        
         print(f"Total number of plans: {len(robot_state_buf)}")
         print(f"max length of plan: {max_length_Action}")
 
@@ -175,6 +182,10 @@ class EpisodicDataset_card(torch.utils.data.Dataset):
         # construct observations
         is_pad = is_pad.bool()
 
+        padded_action = padded_action.float().to(self.device)
+        robot_state = robot_state.float().to(self.device)
+        env_state = env_state.float().to(self.device)
+        
         # normalize image and change dtype to float, N: normalize
         N_action_data = self.normalize_action(padded_action)
         N_action_data = N_action_data.clamp(-1.0, 1.0)
@@ -183,7 +194,7 @@ class EpisodicDataset_card(torch.utils.data.Dataset):
         N_robot_state_data = self.normalize_robot_state(robot_state)
         N_env_state_data = N_env_state_data.clamp(-5.0, 5.0)
         N_robot_state_data = N_robot_state_data.clamp(-5.0, 5.0)
-        breakpoint()
+
         return N_env_state_data, N_robot_state_data, N_action_data, is_pad
 
 
@@ -414,8 +425,12 @@ def load_data(dataset_dir, num_episodes, batch_size_train, batch_size_val, devic
     # val_dataset = EpisodicDataset(val_indices, dataset_dir, camera_names, norm_stats)
     train_dataset = EpisodicDataset_card(train_indices, dataset_dir, device=device)
     val_dataset = EpisodicDataset_card(val_indices, dataset_dir, device=device)
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_train, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=1)
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size_val, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=1)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_train, shuffle=True,
+                                  # pin_memory=True, num_workers=1, prefetch_factor=1
+                                  )
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size_val, shuffle=True,
+                                # pin_memory=True, num_workers=1, prefetch_factor=1
+                                )
 
     return train_dataloader, val_dataloader, train_dataset.is_sim
 
