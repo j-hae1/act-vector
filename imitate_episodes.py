@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 from tqdm import tqdm
 from einops import rearrange
+import wandb
 
 from constants import DT
 from constants import PUPPET_GRIPPER_JOINT_OPEN
@@ -84,7 +85,14 @@ def main(args):
         'camera_names': camera_names,
         'real_robot': not is_sim
     }
-
+    
+    run_name = f"ACT_BC_full"
+    wandb.init(project="pi_master_subgoal",
+               entity="daebangstn-space",  # replace with your wandb username or team name
+               name=run_name,  # log_name,
+               sync_tensorboard=True,
+               config=config)
+    
     if is_eval:
         ckpt_names = [f'policy_best.ckpt']
         results = []
@@ -332,43 +340,49 @@ def train_bc(train_dataloader, val_dataloader, config):
         # validation
         with torch.inference_mode():
             policy.eval()
-            epoch_dicts = []
-            for batch_idx, data in enumerate(val_dataloader):
-                forward_dict = forward_pass(data, policy)
-                epoch_dicts.append(forward_dict)
-            epoch_summary = compute_dict_mean(epoch_dicts)
-            validation_history.append(epoch_summary)
+            val_epoch_dicts = []
+            for batch_idx, val_data in enumerate(val_dataloader):
+                val_forward_dict = forward_pass(val_data, policy)
+                val_epoch_dicts.append(val_forward_dict)
+            val_epoch_summary = compute_dict_mean(val_epoch_dicts)
+            validation_history.append(val_epoch_summary)
 
-            epoch_val_loss = epoch_summary['loss']
+            epoch_val_loss = val_epoch_summary['loss']
             if epoch_val_loss < min_val_loss:
                 min_val_loss = epoch_val_loss
                 best_ckpt_info = (epoch, min_val_loss, deepcopy(policy.state_dict()))
         print(f'Val loss:   {epoch_val_loss:.5f}')
         summary_string = ''
-        for k, v in epoch_summary.items():
+        for k, v in val_epoch_summary.items():
             summary_string += f'{k}: {v.item():.3f} '
         print(summary_string)
 
         # training
         policy.train()
         optimizer.zero_grad()
-        for batch_idx, data in enumerate(train_dataloader):
-            forward_dict = forward_pass(data, policy)
+        for batch_idx, train_data in enumerate(train_dataloader):
+            train_forward_dict = forward_pass(train_data, policy)
             # backward
-            loss = forward_dict['loss']
-            loss.backward()
+            train_loss = train_forward_dict['loss']
+            train_loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            train_history.append(detach_dict(forward_dict))
-        epoch_summary = compute_dict_mean(train_history[(batch_idx+1)*epoch:(batch_idx+1)*(epoch+1)])
-        epoch_train_loss = epoch_summary['loss']
+            train_history.append(detach_dict(train_forward_dict))
+        train_epoch_summary = compute_dict_mean(train_history[(batch_idx+1)*epoch:(batch_idx+1)*(epoch+1)])
+        epoch_train_loss = train_epoch_summary['loss']
         print(f'Train loss: {epoch_train_loss:.5f}')
         summary_string = ''
-        for k, v in epoch_summary.items():
+        for k, v in train_epoch_summary.items():
             summary_string += f'{k}: {v.item():.3f} '
         print(summary_string)
+        
+        train_log = {key: value.item() for key, value in train_epoch_summary.items()}
+        val_log = {key: value.item() for key, value in val_epoch_summary.items()}
 
-        if epoch % 100 == 0:
+        # Log the summaries
+        wandb.log({"train": train_log, "validation": val_log})
+
+        if epoch % 100 == 0 and epoch > 0:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
             torch.save(policy.state_dict(), ckpt_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)
