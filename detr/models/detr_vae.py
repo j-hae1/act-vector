@@ -110,7 +110,8 @@ class DETRVAE(nn.Module):
             
         qpos = self.input_proj_robot_state(qpos)
         env_state = self.input_proj_env_state(env_state)
-        transformer_input = torch.cat([qpos, env_state], axis=1) # seq length = 2
+        # transformer_input = torch.cat([qpos, env_state], axis=1) # seq length = 2
+        transformer_input = torch.stack([qpos, env_state], axis=1) # seq length = 2
         hs = self.transformer(transformer_input, None, self.query_embed.weight, self.pos.weight,
                               latent_input=latent_input)[0]
         a_hat = self.action_head(hs)
