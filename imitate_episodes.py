@@ -15,7 +15,6 @@ from utils import load_data # data functions
 from utils import sample_box_pose, sample_insertion_pose # robot functions
 from utils import compute_dict_mean, set_seed, detach_dict # helper functions
 from policy import ACTPolicy
-from visualize_episodes import save_videos
 
 # from sim_env import BOX_POSE
 
