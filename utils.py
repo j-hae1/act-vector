@@ -157,8 +157,8 @@ class EpisodicDataset_card(torch.utils.data.Dataset):
         sample_full_episode = False # hardcode
 
         action_pad = self.action_pad[index]
-        non_zero_rows = torch.any(action_pad != 0, dim=1)
-        episode_len = torch.sum(non_zero_rows).item()
+        valid_rows = torch.any(action_pad != 1, dim=1)
+        episode_len = torch.sum(valid_rows).item()
 
         action_full = self.action_buf[index]
         original_action_shape = action_full.shape
